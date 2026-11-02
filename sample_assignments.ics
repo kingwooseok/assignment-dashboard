@@ -1,0 +1,57 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Magam Note//Sample assignments//KO
+BEGIN:VEVENT
+SUMMARY:연결 리스트 구현
+DTSTART;VALUE=DATE:20261101
+DTSTAMP:20261101T000000Z
+UID:demo-november-2026-1@magam-note.example
+CATEGORIES:자료구조
+DESCRIPTION:시연용 예시 일정입니다. 노드 삽입과 삭제 기
+ 능 정리
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:HW2 웹앱 개발 보고서
+DTSTART;TZID=Asia/Seoul:20261102T235900
+DTSTAMP:20261101T000000Z
+UID:demo-november-2026-2@magam-note.example
+CATEGORIES:오픈소스SW
+DESCRIPTION:시연용 예시 일정입니다. 실행 화면과 GitHub 저
+ 장소 정리
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:반응형 페이지 제작
+DTSTART;TZID=Asia/Seoul:20261104T180000
+DTSTAMP:20261101T000000Z
+UID:demo-november-2026-3@magam-note.example
+CATEGORIES:웹프로그래밍
+DESCRIPTION:시연용 예시 일정입니다. 모바일 화면에서도 
+ 레이아웃 확인
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:SQL 실습 과제
+DTSTART;VALUE=DATE:20261105
+DTSTAMP:20261101T000000Z
+UID:demo-november-2026-4@magam-note.example
+CATEGORIES:데이터베이스
+DESCRIPTION:시연용 예시 일정입니다. JOIN과 GROUP BY 연습
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:패킷 분석 보고서
+DTSTART;TZID=Asia/Seoul:20261108T235900
+DTSTAMP:20261101T000000Z
+UID:demo-november-2026-5@magam-note.example
+CATEGORIES:컴퓨터네트워크
+DESCRIPTION:시연용 예시 일정입니다. 프로토콜별 패킷 흐
+ 름 정리
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:정렬 알고리즘 비교
+DTSTART;VALUE=DATE:20261110
+DTSTAMP:20261101T000000Z
+UID:demo-november-2026-6@magam-note.example
+CATEGORIES:알고리즘
+DESCRIPTION:시연용 예시 일정입니다. 실행 시간과 공간 복
+ 잡도 비교
+END:VEVENT
+END:VCALENDAR

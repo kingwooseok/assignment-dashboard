@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>마감노트 · 과제 마감 대시보드</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/style.css"><script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar"><div class="topbar-inner">
+    <a class="brand" href="/" aria-label="마감노트 홈"><span class="brand-icon">▦</span>마감노트<span class="brand-caption">ASSIGNMENT DASHBOARD</span></a>
+    <span class="local-indicator"><span></span> 내 컴퓨터에 저장</span>
+  </div></header>
+  <main>
+    <section class="hero">
+      <div><p class="eyebrow" id="today-label">MY SEMESTER</p><h1>다가오는 과제를 한눈에.</h1><p class="hero-description">일정을 모으고, 마감을 확인하고, 하나씩 완료하세요.</p></div>
+      <div class="hero-actions"><button id="open-import" class="button secondary"><span aria-hidden="true">↥</span> 캘린더 가져오기</button><button id="open-create" class="button primary"><span aria-hidden="true">＋</span> 과제 추가</button></div>
+    </section>
+    <section class="stats" aria-label="전체 과제 현황">
+      <article class="stat today"><div class="stat-label">오늘 마감 <span aria-hidden="true">◷</span></div><div><strong id="stat-today">0</strong><span class="unit">개</span></div><p>오늘까지 마무리할 과제</p></article>
+      <article class="stat week"><div class="stat-label">이번 주 마감 <span aria-hidden="true">▦</span></div><div><strong id="stat-week">0</strong><span class="unit">개</span></div><p id="week-range">오늘부터 일요일까지</p></article>
+      <article class="stat overdue"><div class="stat-label">기한 지난 미완료 <span aria-hidden="true">!</span></div><div><strong id="stat-overdue">0</strong><span class="unit">개</span></div><p>한 번 더 확인해 주세요</p></article>
+      <article class="stat completed"><div class="stat-label">완료한 과제 <span aria-hidden="true">✓</span></div><div><strong id="stat-completed">0</strong><span class="unit">개</span></div><p id="completion-summary">차근차근 채워 나가요</p></article>
+    </section>
+    <div class="dashboard-grid">
+      <section class="panel task-panel">
+        <div class="panel-heading"><div><h2>과제 목록 <span id="visible-count" class="count">0</span></h2><p>마감이 가까운 순서로 정리했어요.</p></div><span class="sort-label">마감일 오름차순 ↓</span></div>
+        <div class="toolbar">
+          <div class="tabs" role="group" aria-label="완료 상태 필터"><button data-status="all" aria-pressed="true" class="active">전체</button><button data-status="pending" aria-pressed="false">미완료</button><button data-status="completed" aria-pressed="false">완료</button></div>
+          <div class="filter-controls"><select id="subject-filter" aria-label="과목별 필터"><option value="">모든 과목</option></select><input id="search" type="search" placeholder="과제명 검색" aria-label="과제명 검색" maxlength="160"></div>
+        </div>
+        <div id="load-error" class="inline-error" role="alert" hidden></div>
+        <div class="table-scroll" id="table-container"><table class="task-table"><thead><tr><th class="check-column">완료</th><th>과제 / 과목</th><th>마감일</th><th>남은 기간</th><th class="action-column">관리</th></tr></thead><tbody id="task-body"></tbody></table></div>
+        <div class="empty-state" id="empty-state" hidden><div class="empty-icon" aria-hidden="true">▤</div><h3 id="empty-title">첫 과제를 등록해 보세요</h3><p id="empty-description">직접 추가하거나 캘린더 파일에서 한 번에 가져올 수 있어요.</p><button id="empty-create" class="button secondary">과제 추가하기</button></div>
+        <div class="list-footer"><span id="list-caption">전체 과제 기준으로 마감 현황을 집계합니다.</span><button id="refresh" class="text-button">↻ 새로고침</button></div>
+      </section>
+      <aside class="sidebar">
+        <section class="panel progress-panel"><p class="eyebrow">MY PROGRESS</p><h2>이번 목록의 진행률</h2><div class="progress-number"><strong id="progress-percent">0</strong><span>%</span></div><div class="progress-track" role="progressbar" aria-label="전체 과제 완료율" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="progress-bar"></div></div><p id="progress-copy">완료한 과제가 여기에 쌓여요.</p><div class="next-task"><span>다음 마감</span><strong id="next-title">아직 등록된 과제가 없어요</strong><small id="next-date">과제를 추가해 일정을 시작하세요.</small></div></section>
+        <section class="import-card"><div class="mini-icon" aria-hidden="true">↥</div><h2>일정, 한 번에 가져오기</h2><p>캘린더의 .ics 파일을 선택하고<br>필요한 일정만 골라 담으세요.</p><button id="try-sample" class="button sample-button">예시 파일로 체험 <span aria-hidden="true">↗</span></button><a href="/sample_assignments.ics" download>예시 .ics 파일 다운로드</a></section>
+      </aside>
+    </div>
+    <footer class="page-footer"><span>마감노트 <span class="footer-dot">·</span> 한국 시간 기준</span><span id="save-status">모든 변경 사항은 자동 저장됩니다.</span></footer>
+  </main>
+
+  <dialog id="assignment-dialog" aria-labelledby="assignment-dialog-title">
+    <form id="assignment-form">
+      <div class="dialog-header"><div><p class="eyebrow">ASSIGNMENT</p><h2 id="assignment-dialog-title">새 과제 추가</h2></div><button type="button" data-close="assignment-dialog" class="close-button" aria-label="과제 창 닫기">×</button></div>
+      <div class="form-fields">
+        <label>과목명 <input id="field-subject" name="subject" maxlength="80" placeholder="예: 오픈소스SW" required></label>
+        <label>과제명 <input id="field-title" name="title" maxlength="160" placeholder="예: 웹앱 개발 보고서" required></label>
+        <div class="form-row"><label>마감일 <input id="field-date" name="date" type="date" required></label><label>마감 시각 <span class="optional">선택</span><input id="field-time" name="time" type="time"></label></div>
+        <label>과제 링크 <span class="optional">선택</span><input id="field-url" name="url" type="url" maxlength="2000" placeholder="https://..."></label>
+        <label>메모 <span class="optional">선택</span><textarea id="field-note" name="note" maxlength="2000" rows="3" placeholder="제출 방법이나 기억할 내용을 적어 두세요."></textarea></label>
+        <p id="form-error" class="inline-error" role="alert" hidden></p>
+      </div>
+      <div class="dialog-footer"><button type="button" class="button secondary" data-close="assignment-dialog">취소</button><button type="submit" id="save-assignment" class="button primary">과제 추가</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="import-dialog" class="wide-dialog" aria-labelledby="import-dialog-title">
+    <div class="dialog-header"><div><p class="eyebrow">IMPORT CALENDAR</p><h2 id="import-dialog-title">캘린더 가져오기</h2></div><button data-close="import-dialog" class="close-button" aria-label="가져오기 창 닫기">×</button></div>
+    <div class="import-body"><p class="dialog-description">가져올 일정을 선택하고 과목명을 확인해 주세요.</p><label class="file-zone">캘린더 파일 선택 <span>.ics · 최대 2MB</span><input id="ics-file" type="file" accept=".ics,text/calendar"></label>
+      <p id="import-filename" class="muted"></p><div id="import-error" class="inline-error" role="alert" hidden></div><details id="import-warnings" hidden><summary>가져오기 안내</summary><ul></ul></details>
+      <div id="preview-container" hidden><div class="preview-top"><label><input id="select-all" type="checkbox" checked> 가져올 수 있는 일정 전체 선택</label><span id="selection-count"></span></div><div id="preview-list"></div></div>
+      <p id="import-hint" class="import-hint">파일을 선택하면 제목과 날짜가 여기에 표시됩니다.</p>
+    </div><div class="dialog-footer"><button data-close="import-dialog" class="button secondary">취소</button><button id="confirm-import" class="button primary" disabled>선택한 일정 가져오기</button></div>
+  </dialog>
+
+  <dialog id="delete-dialog" class="small-dialog" aria-labelledby="delete-title"><div class="dialog-header"><h2 id="delete-title">과제를 삭제할까요?</h2></div><p id="delete-name"></p><div class="dialog-footer"><button data-close="delete-dialog" class="button secondary">취소</button><button id="confirm-delete" class="button danger">삭제</button></div></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>
