@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>마감노트 · 배포 중 FastAPI 응답 기록</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f6fb;color:#14253f;font-family:'Malgun Gothic',system-ui,sans-serif;font-size:14px}main{max-width:1200px;margin:48px auto;padding:0 28px}.eyebrow{font-size:12px;font-weight:700;letter-spacing:2px;color:#4266d8}h1{font-size:30px;margin:12px 0}p{color:#60718a;line-height:1.8}.head{display:flex;justify-content:space-between;align-items:center;gap:20px}a{color:#315be8;text-decoration:none}button{border:0;border-radius:9px;background:#315be8;color:white;padding:12px 18px;font:inherit;font-weight:bold;cursor:pointer}button:disabled{opacity:.45;cursor:default}.muted{background:#e7ecf6;color:#445875}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:28px 0}.card,.panel{background:white;border:1px solid #e1e7f0;border-radius:14px;padding:22px}.label{color:#78869a;font-size:13px}.value{font-size:34px;font-weight:bold;margin-top:12px}.ok{color:#16785e}.bad{color:#c34554}.panel{margin-top:18px}h2{font-size:18px;margin:0 0 14px}.details{display:grid;grid-template-columns:1fr 1fr;gap:12px;color:#53647d;line-height:1.8}.mono{font-family:Consolas,monospace;font-size:13px;word-break:break-all}table{border-collapse:collapse;width:100%;font-size:12px}th,td{padding:12px 8px;text-align:left;border-bottom:1px solid #e8edf5}th{color:#7b899d;font-weight:600}tbody tr:last-child td{border:0}.tag{padding:4px 8px;background:#e6f5ef;color:#16785e;border-radius:5px;font-weight:bold}.events{font-size:14px;line-height:1.8;color:#24447d}.small{font-size:12px}#note{font-weight:700;color:#315be8}.actions{display:flex;gap:8px}@media(max-width:800px){.stats{grid-template-columns:1fr 1fr}.head{display:block}.details{grid-template-columns:1fr}.panel{overflow:auto}}
+</style>
+<main>
+<div class="head"><div><div class="eyebrow">DEPLOYMENT VERIFICATION</div><h1>배포 중에도, 과제 목록은 계속 응답합니다.</h1><p>실제 FastAPI 과제 목록을 요청하고 응답 버전과 성공 여부를 기록합니다.</p></div><div class="actions"><button id="start">측정 시작</button><button id="stop" class="muted" disabled>측정 종료</button></div></div>
+<div class="stats"><div class="card"><div class="label">전체 요청</div><div class="value" id="total">0</div></div><div class="card"><div class="label">성공 응답</div><div class="value ok" id="success">0</div></div><div class="card"><div class="label">실패 응답</div><div class="value bad" id="failed">0</div></div><div class="card"><div class="label">현재 응답 버전</div><div class="value" id="version">-</div></div></div>
+<section class="panel"><h2>연속 요청 상태 <span id="note">대기 중</span></h2><div class="details"><div>검증 주소<br><span class="mono" id="address"></span></div><div>관측 구간 (한국 시간)<br><span id="window">-</span></div><div>요청 종료 후 간격<br><span id="gap">설정 1초</span></div><div>현재 응답 커밋<br><span class="mono" id="revision">-</span></div></div></section>
+<section class="panel"><h2>응답 버전 전환 기록</h2><div class="events" id="events">측정을 시작하면 최초 응답과 새 버전으로 전환된 시각을 표시합니다.</div></section>
+<section class="panel"><h2>최근 실제 API 응답</h2><table><thead><tr><th>요청</th><th>응답 시각 (한국 시간)</th><th>HTTP</th><th>처리 시간</th><th>버전 / 커밋</th><th>결과</th></tr></thead><tbody id="rows"></tbody></table></section>
+<p class="small">요청 완료 후 1초마다 다음 요청을 보냅니다. 화면을 열어 둔 채 배포하면 응답 버전 전환이 누적됩니다. <a href="/" target="_blank">과제 화면 열기 ↗</a></p>
+</main>
+<script>
+const el=id=>document.getElementById(id);let running=false,total=0,success=0,failed=0,previous='',lastEnd=null,maxGap=0,started='',entries=[];
+el('address').textContent=location.origin+'/api/dashboard';
+const kst=t=>new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(t);
+el('start').onclick=()=>{running=true;el('start').disabled=true;el('stop').disabled=false;el('note').textContent='측정 중';if(!started)started=kst(new Date());poll()};
+el('stop').onclick=()=>{running=false;el('start').disabled=false;el('stop').disabled=true;el('note').textContent='측정 종료';lastEnd=null};
+async function poll(){
+ if(!running)return;const start=performance.now();if(lastEnd!==null)maxGap=Math.max(maxGap,(start-lastEnd)/1000);total++;
+ let http='-',version='-',revision='-',result='',ok=false;
+ try{const response=await fetch('/api/dashboard',{cache:'no-store',signal:AbortSignal.timeout(3000)});http=response.status;const data=await response.json();version=data.release.version;revision=data.release.revision;ok=response.ok&&Array.isArray(data.assignments)&&data.assignments.length===data.summary.total&&response.headers.get('X-App-Revision')===revision;if(!ok)throw Error('목록 응답 오류');result='과제 '+data.summary.total+'개 · 정상';success++;if(previous!==revision){if(!previous)el('events').replaceChildren();const line=document.createElement('div');line.textContent=kst(new Date())+' · '+(previous?previous.slice(0,7)+' → ':'최초 응답 ')+revision.slice(0,7)+' · v'+version+' · HTTP '+http;el('events').append(line);previous=revision;}}
+ catch(error){failed++;result=error.message;}
+ const end=performance.now();lastEnd=end;el('total').textContent=total;el('success').textContent=success;el('failed').textContent=failed;el('version').textContent=version;el('revision').textContent=revision;el('window').textContent=started+' ~ '+kst(new Date());el('gap').textContent='설정 1초 · 관측 최대 '+maxGap.toFixed(3)+'초';
+ const tr=document.createElement('tr');for(const value of ['#'+total,kst(new Date()),http,(end-start).toFixed(1)+' ms',version+' / '+revision.slice(0,7),result]){const td=document.createElement('td');td.textContent=value;tr.append(td)}tr.lastChild.className=ok?'ok':'bad';el('rows').prepend(tr);while(el('rows').children.length>8)el('rows').lastChild.remove();if(running)setTimeout(poll,1000);
+}
+</script>
+</html>

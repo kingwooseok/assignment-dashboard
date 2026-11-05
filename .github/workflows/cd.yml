@@ -1,0 +1,68 @@
+name: CD - Local zero-downtime deployment
+
+on:
+  workflow_run:
+    workflows: ['CI - Test and publish Docker image']
+    branches: [main]
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: assignment-dashboard-local-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.repository == 'kingwooseok/assignment-dashboard'
+    runs-on: [self-hosted, Windows, X64, assignment-dashboard]
+    timeout-minutes: 20
+    env:
+      DEPLOY_REVISION: ${{ github.event.workflow_run.head_sha }}
+      DOCKER_CONFIG: ${{ runner.temp }}/assignment-docker-auth
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Find Docker Desktop
+        shell: pwsh
+        run: |
+          $candidates = @("$env:LOCALAPPDATA\Programs\DockerDesktop\resources\bin", 'C:\Program Files\Docker\Docker\resources\bin')
+          foreach ($directory in $candidates) {
+            if (Test-Path (Join-Path $directory 'docker.exe')) {
+              $directory | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+              $env:PATH = "$directory;$env:PATH"
+              break
+            }
+          }
+          docker info --format '{{.OSType}}'
+          if ($LASTEXITCODE -ne 0) { throw 'Docker Desktop을 실행해 주세요.' }
+      - name: Sign in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: kingwooseok
+          password: ${{ secrets.KINGWOOSEOK }}
+      - name: Deploy and continuously verify FastAPI
+        shell: pwsh
+        run: python scripts/deploy.py --revision "$env:DEPLOY_REVISION" --output artifacts/deployment
+      - name: Add verification summary
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path 'artifacts/deployment/summary.md') {
+            Get-Content -Raw -Encoding utf8 'artifacts/deployment/summary.md' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deployment-verification-${{ github.run_id }}
+          path: artifacts/deployment/

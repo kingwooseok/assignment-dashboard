@@ -1,0 +1,10 @@
+**
+!requirements.txt
+!app.py
+!models.py
+!storage.py
+!calendar_import.py
+!VERSION
+!sample_assignments.ics
+!static/
+!static/**

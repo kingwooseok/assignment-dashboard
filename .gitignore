@@ -17,3 +17,7 @@ private/
 !sample_assignments.ics
 .DS_Store
 Thumbs.db
+actions-runner/
+.runner-state/
+deploy-output/
+*.zip

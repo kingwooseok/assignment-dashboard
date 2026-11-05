@@ -139,3 +139,21 @@ def test_restart_restores_completion(tmp_path):
 def test_reject_foreign_origin(client):
     response=client.post("/api/assignments",json=task(),headers={"origin":"https://unrelated.example"})
     assert response.status_code == 403
+
+
+def test_release_and_readiness(client):
+    health = client.get('/api/health')
+    state = client.get('/api/dashboard')
+    assert health.status_code == 200
+    assert health.json()['status'] == 'ok'
+    assert health.json()['version'] == state.json()['release']['version']
+    assert state.headers['X-App-Revision'] == state.json()['release']['revision']
+
+
+def test_two_app_instances_share_persistent_data(tmp_path):
+    path = tmp_path / 'shared.db'
+    with TestClient(create_app(path)) as old, TestClient(create_app(path)) as new:
+        item_id = old.post('/api/assignments', json=task()).json()['id']
+        assert new.get('/api/dashboard').json()['assignments'][0]['id'] == item_id
+        new.patch(f'/api/assignments/{item_id}/completion', json={'completed': True})
+        assert old.get('/api/dashboard').json()['assignments'][0]['completed'] is True

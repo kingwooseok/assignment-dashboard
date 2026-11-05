@@ -1,7 +1,8 @@
 # 마감노트
 
 과제와 캘린더 일정을 모아 마감 현황을 확인하는 로컬 웹앱입니다.
-오픈소스SW개발방법및도구 HW2 프로젝트로, FastAPI와 HTML/CSS/JavaScript, SQLite를 사용합니다.
+FastAPI와 HTML/CSS/JavaScript, SQLite를 사용합니다.
+GitHub Actions에서 테스트와 Docker 이미지 배포를 자동으로 실행합니다.
 
 ## 실행
 
@@ -119,4 +120,61 @@ data/assignments.db    실행하면서 생성되는 개인 데이터
 
 1. 학교 캘린더 피드 주소를 주기적으로 읽어 새 일정과 마감일 변경 반영
 2. 같은 저장 데이터를 보여 주는 바탕화면 위젯 추가
-3. 코드 변경 시 테스트를 자동 실행하고 실행 결과를 기록하는 개발 과정 구성
+
+## Docker와 자동 배포
+
+`main`에 코드를 올리면 다음 순서로 실행됩니다.
+
+1. **CI**: Python 테스트 → Docker 이미지 빌드 → 실제 컨테이너 API 검증 → Docker Hub 업로드
+2. **CD**: Windows Runner에서 해당 커밋의 이미지 다운로드 → 새 컨테이너 실행 → 정상 응답 확인 → Nginx 연결 전환
+3. 배포 전부터 별도 프로세스가 `/api/dashboard`를 계속 요청하고, 새 버전 전환 후에도 30초 이상 기록합니다.
+
+서비스 주소는 **http://127.0.0.1:8000** 입니다.
+브라우저 실시간 검증 화면은 **http://127.0.0.1:8000/deployment** 입니다.
+검증 화면의 **측정 시작**을 누른 뒤 새 커밋을 올리면 요청 결과와 버전 전환을 볼 수 있습니다.
+
+### 구성
+
+| 파일 | 역할 |
+| --- | --- |
+| `Dockerfile`, `.dockerignore` | 실행 패키지와 소스만 담는 이미지 |
+| `.github/workflows/ci.yml` | 테스트·빌드·실행 검증·Docker Hub 업로드 |
+| `.github/workflows/cd.yml` | CI가 성공한 main 커밋을 로컬에 배포 |
+| `scripts/deploy.py` | blue/green 컨테이너 교체와 Nginx 전환, 실패 시 이전 설정 복구 |
+| `scripts/monitor.py` | 실제 FastAPI 목록·집계·버전 응답 연속 측정 |
+| `VERSION` | 화면과 검증 응답의 앱 버전 |
+
+Docker Hub 이미지는 `kingwooseok/assignment-dashboard`에 저장됩니다.
+CI는 `latest`와 전체 커밋 SHA 태그를 올리며, CD는 CI가 검증한 SHA 태그를 사용합니다.
+저장소의 `KINGWOOSEOK` Secret에 Docker Hub 액세스 토큰을 등록합니다. 사용자명은 `kingwooseok`입니다.
+
+### 로컬 실행 환경
+
+Windows에 Docker Desktop을 설치하고 Linux 컨테이너 엔진을 실행합니다.
+저장소 Settings → Actions → Runners에서 Windows x64 Runner를 등록하고
+추가 레이블에 `assignment-dashboard`를 지정합니다. Runner 실행 중에는 `run.cmd`를 유지합니다.
+Runner와 로컬 검증 기록은 Git에 포함하지 않습니다.
+
+Nginx 프록시는 `127.0.0.1:8000`에서 요청을 받습니다.
+새 blue/green 컨테이너의 실제 API 응답을 검사한 뒤 Nginx를 graceful reload합니다.
+기존 요청은 이전 컨테이너에서 마무리되며, 새 요청은 새 컨테이너로 전달됩니다.
+SQLite 데이터는 두 컨테이너가 공유하는 `assignment-dashboard-data` 볼륨에 유지됩니다.
+앱 컨테이너와 프록시에는 `unless-stopped` 재시작 정책을 설정합니다.
+
+### 배포 검증 결과
+
+GitHub Actions의 CD 실행 Summary에 배포 전·중·후 요청 결과를 표시합니다.
+동일 실행의 Artifacts에는 `summary.md`, `result.json`, `requests.jsonl`, `requests.csv`, 컨테이너 로그가 저장됩니다.
+
+- 요청마다 시작·종료 시각, HTTP 상태, 응답 시간, 앱 버전과 커밋을 기록
+- 응답의 과제 목록·집계와 버전 헤더를 검사
+- 요청 번호 연속성, 실제 요청 간격과 최대 관측 공백을 집계
+- 배포 중 이전 커밋에서 새 커밋으로 응답이 전환되는지 검사
+- 전환 후 30초 이상 새 버전 응답과 과제 데이터 유지를 검사
+- 실패 요청이나 기준을 넘는 관측 공백이 있으면 검증 실패로 기록
+
+직접 배포할 때는 새 커밋 SHA와 새로운 출력 폴더를 지정합니다.
+
+```powershell
+python scripts/deploy.py --revision <전체-커밋-SHA> --output artifacts/manual-deployment
+```

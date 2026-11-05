@@ -12,6 +12,8 @@ from models import AssignmentInput, CompletionInput, ImportSelection, dashboard,
 from storage import Store
 
 ROOT = Path(__file__).resolve().parent
+VERSION = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
+REVISION = os.environ.get("APP_REVISION", "local")
 
 
 def create_app(db_path=None):
@@ -27,6 +29,8 @@ def create_app(db_path=None):
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Cache-Control"] = "no-store"
+        response.headers["X-App-Version"] = VERSION
+        response.headers["X-App-Revision"] = REVISION
         return response
 
     @api.exception_handler(RequestValidationError)
@@ -44,9 +48,21 @@ def create_app(db_path=None):
     def index():
         return FileResponse(ROOT / "static" / "index.html")
 
+    @api.get("/deployment")
+    def deployment_verification():
+        return FileResponse(ROOT / "static" / "deployment.html")
+
+    @api.get("/api/health")
+    def health():
+        # 컨테이너 교체 전에 서버와 저장소가 함께 응답하는지 확인한다.
+        with store.connection() as db:
+            db.execute("SELECT 1").fetchone()
+        return {"status": "ok", "version": VERSION, "revision": REVISION}
+
     @api.get("/api/dashboard")
     def get_dashboard(q: str = "", subject: str = "", status: str = "all"):
-        return dashboard(store.all(), now_kst(), q.strip(), subject, status)
+        return {**dashboard(store.all(), now_kst(), q.strip(), subject, status),
+                "release": {"version": VERSION, "revision": REVISION}}
 
     @api.post("/api/assignments", status_code=201)
     def add(item: AssignmentInput):
