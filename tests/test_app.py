@@ -157,3 +157,38 @@ def test_two_app_instances_share_persistent_data(tmp_path):
         assert new.get('/api/dashboard').json()['assignments'][0]['id'] == item_id
         new.patch(f'/api/assignments/{item_id}/completion', json={'completed': True})
         assert old.get('/api/dashboard').json()['assignments'][0]['completed'] is True
+
+
+@pytest.mark.parametrize('deadline,expected', [
+    ('all', ['어제','오늘 시각 지남','오늘 완료','오늘','내일','3일 뒤','4일 뒤']),
+    ('today', ['오늘']), ('next3', ['오늘','내일','3일 뒤']),
+    ('overdue', ['어제','오늘 시각 지남']),
+])
+def test_deadline_filters_exclude_completed_and_expired(client, deadline, expected):
+    for title, due in [('어제','2026-11-01'), ('오늘 시각 지남','2026-11-02T11:00:00+09:00'),
+                       ('오늘 완료','2026-11-02'), ('오늘','2026-11-02'),
+                       ('내일','2026-11-03'), ('3일 뒤','2026-11-05'), ('4일 뒤','2026-11-06')]:
+        created = client.post('/api/assignments', json=task(title=title, due_at=due)).json()
+        if title == '오늘 완료':
+            client.patch(f"/api/assignments/{created['id']}/completion", json={'completed': True})
+    data = client.get('/api/dashboard', params={'deadline': deadline}).json()
+    assert [row['title'] for row in data['assignments']] == expected
+    assert data['summary']['total'] == 7
+    assert data['summary']['completed'] == 1
+
+
+def test_deadline_filter_composes_with_search_and_subject(client):
+    client.post('/api/assignments', json=task(title='웹 보고서', subject='웹', due_at='2026-11-03'))
+    client.post('/api/assignments', json=task(title='자료 보고서', subject='자료', due_at='2026-11-03'))
+    client.post('/api/assignments', json=task(title='웹 실습', subject='웹', due_at='2026-11-03'))
+    data = client.get('/api/dashboard', params={'deadline':'next3','q':'보고서','subject':'웹','status':'pending'}).json()
+    assert [row['title'] for row in data['assignments']] == ['웹 보고서']
+    assert data['summary']['total'] == 3
+    assert client.get('/api/dashboard?deadline=invalid').status_code == 422
+
+
+@pytest.mark.parametrize('today,due', [('2026-01-31','2026-02-03'), ('2026-12-31','2027-01-03'), ('2028-02-28','2028-03-02')])
+def test_three_day_filter_calendar_boundary(today, due):
+    result = dashboard([{**task(due_at=due),'id':1,'completed':False}],
+                       datetime.fromisoformat(today+'T12:00:00+09:00'), deadline='next3')
+    assert result['assignments'][0]['days_left'] == 3

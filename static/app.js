@@ -1,6 +1,6 @@
 "use strict";
 const $ = (selector) => document.querySelector(selector);
-let currentStatus = "all", assignments = [], editingId = null, deletingId = null;
+let currentStatus = "all", currentDeadline = "all", assignments = [], editingId = null, deletingId = null;
 let importItems = [], requestNumber = 0, toastTimer, searchTimer, importRequest = 0;
 
 async function api(path, options = {}) {
@@ -41,7 +41,7 @@ function iconButton(kind, title, action) {
 async function loadDashboard() {
   const number = ++requestNumber;
   try {
-    const params = new URLSearchParams({q: $("#search").value, subject: $("#subject-filter").value, status: currentStatus});
+    const params = new URLSearchParams({q: $("#search").value, subject: $("#subject-filter").value, status: currentStatus, deadline: currentDeadline});
     const data = await api("/api/dashboard?" + params);
     if (number !== requestNumber) return;
     showError("#load-error"); assignments = data.assignments;
@@ -70,7 +70,7 @@ function renderTasks() {
   $("#visible-count").textContent = assignments.length;
   $("#table-container").hidden = assignments.length === 0;
   $("#empty-state").hidden = assignments.length !== 0;
-  const filtered = currentStatus !== "all" || $("#search").value.trim() || $("#subject-filter").value;
+  const filtered = currentStatus !== "all" || currentDeadline !== "all" || $("#search").value.trim() || $("#subject-filter").value;
   $("#empty-title").textContent = filtered ? "조건에 맞는 과제가 없어요" : "첫 과제를 등록해 보세요";
   $("#empty-description").textContent = filtered ? "검색어나 필터를 바꾸어 다른 과제를 찾아보세요." : "직접 추가하거나 캘린더 파일에서 한 번에 가져올 수 있어요.";
   $("#empty-create").hidden = !!filtered;
@@ -127,6 +127,11 @@ document.querySelectorAll("[data-status]").forEach(button => button.onclick = ()
   document.querySelectorAll("[data-status]").forEach(tab => {const active=tab===button;tab.classList.toggle("active",active);tab.setAttribute("aria-pressed",String(active));}); loadDashboard();
 });
 $("#subject-filter").onchange = loadDashboard;
+document.querySelectorAll("[data-deadline]").forEach(button => button.onclick = () => {
+  currentDeadline = button.dataset.deadline;
+  document.querySelectorAll("[data-deadline]").forEach(tab => {const active=tab===button;tab.classList.toggle("active",active);tab.setAttribute("aria-pressed",String(active));});
+  loadDashboard();
+});
 $("#search").oninput = () => { clearTimeout(searchTimer); searchTimer = setTimeout(loadDashboard,180); };
 $("#refresh").onclick = loadDashboard;
 

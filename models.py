@@ -85,7 +85,7 @@ def due_details(item, reference):
             "sort_key": instant.isoformat()}
 
 
-def dashboard(assignments, reference, query="", subject="", status="all"):
+def dashboard(assignments, reference, query="", subject="", status="all", deadline="all"):
     """집계는 전체 목록을 기준으로 하고 검색·필터는 목록에 적용한다."""
     reference = reference.astimezone(KST)
     rows = [{**item, **due_details(item, reference)} for item in assignments]
@@ -109,6 +109,13 @@ def dashboard(assignments, reference, query="", subject="", status="all"):
         rows = [row for row in rows if not row["completed"]]
     elif status == "completed":
         rows = [row for row in rows if row["completed"]]
+    # 완료 여부와 실제 마감 시각을 함께 검사해 지금 처리할 과제만 남긴다.
+    if deadline == "today":
+        rows = [row for row in rows if row["status"] == "today"]
+    elif deadline == "next3":
+        rows = [row for row in rows if row["status"] in ("today", "upcoming") and 0 <= row["days_left"] <= 3]
+    elif deadline == "overdue":
+        rows = [row for row in rows if row["status"] == "overdue"]
     rows.sort(key=lambda row: (row["sort_key"], row["id"]))
     return {"assignments": rows, "summary": summary, "subjects": subjects,
             "today": today.isoformat(), "week_end": week_end.isoformat(), "next": future[0] if future else None}

@@ -1,6 +1,7 @@
 """실행: python run.py. 브라우저: http://127.0.0.1:8000"""
 import os
 from pathlib import Path
+from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
@@ -60,8 +61,9 @@ def create_app(db_path=None):
         return {"status": "ok", "version": VERSION, "revision": REVISION}
 
     @api.get("/api/dashboard")
-    def get_dashboard(q: str = "", subject: str = "", status: str = "all"):
-        return {**dashboard(store.all(), now_kst(), q.strip(), subject, status),
+    def get_dashboard(q: str = "", subject: str = "", status: str = "all",
+                      deadline: Literal['all', 'today', 'next3', 'overdue'] = 'all'):
+        return {**dashboard(store.all(), now_kst(), q.strip(), subject, status, deadline),
                 "release": {"version": VERSION, "revision": REVISION}}
 
     @api.post("/api/assignments", status_code=201)

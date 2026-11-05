@@ -13,7 +13,7 @@
   </div></header>
   <main>
     <section class="hero">
-      <div><p class="eyebrow" id="today-label">MY SEMESTER</p><h1>다가오는 과제를 한눈에.</h1><p class="hero-description">일정을 모으고, 마감을 확인하고, 하나씩 완료하세요.</p></div>
+      <div><p class="eyebrow" id="today-label">MY SEMESTER</p><h1>급한 과제부터, 하나씩.</h1><p class="hero-description">오늘과 3일 이내 마감을 골라 지금 할 일을 확인하세요.</p></div>
       <div class="hero-actions"><button id="open-import" class="button secondary"><span aria-hidden="true">↥</span> 캘린더 가져오기</button><button id="open-create" class="button primary"><span aria-hidden="true">＋</span> 과제 추가</button></div>
     </section>
     <section class="stats" aria-label="전체 과제 현황">
@@ -29,6 +29,7 @@
           <div class="tabs" role="group" aria-label="완료 상태 필터"><button data-status="all" aria-pressed="true" class="active">전체</button><button data-status="pending" aria-pressed="false">미완료</button><button data-status="completed" aria-pressed="false">완료</button></div>
           <div class="filter-controls"><select id="subject-filter" aria-label="과목별 필터"><option value="">모든 과목</option></select><input id="search" type="search" placeholder="과제명 검색" aria-label="과제명 검색" maxlength="160"></div>
         </div>
+        <div class="deadline-toolbar"><span class="deadline-label">마감 모아보기</span><div class="deadline-filters" role="group" aria-label="마감 기간 필터"><button data-deadline="all" aria-pressed="true" class="active">모든 마감</button><button data-deadline="today" aria-pressed="false">오늘 마감</button><button data-deadline="next3" aria-pressed="false">3일 이내</button><button data-deadline="overdue" aria-pressed="false">기한 지남</button></div><small>미완료 과제 기준</small></div>
         <div id="load-error" class="inline-error" role="alert" hidden></div>
         <div class="table-scroll" id="table-container"><table class="task-table"><thead><tr><th class="check-column">완료</th><th>과제 / 과목</th><th>마감일</th><th>남은 기간</th><th class="action-column">관리</th></tr></thead><tbody id="task-body"></tbody></table></div>
         <div class="empty-state" id="empty-state" hidden><div class="empty-icon" aria-hidden="true">▤</div><h3 id="empty-title">첫 과제를 등록해 보세요</h3><p id="empty-description">직접 추가하거나 캘린더 파일에서 한 번에 가져올 수 있어요.</p><button id="empty-create" class="button secondary">과제 추가하기</button></div>
@@ -39,7 +40,7 @@
         <section class="import-card"><div class="mini-icon" aria-hidden="true">↥</div><h2>일정, 한 번에 가져오기</h2><p>캘린더의 .ics 파일을 선택하고<br>필요한 일정만 골라 담으세요.</p><button id="try-sample" class="button sample-button">예시 파일로 체험 <span aria-hidden="true">↗</span></button><a href="/sample_assignments.ics" download>예시 .ics 파일 다운로드</a></section>
       </aside>
     </div>
-    <footer class="page-footer"><span>마감노트 <span class="footer-dot">·</span> 한국 시간 기준</span><span id="save-status">모든 변경 사항은 자동 저장됩니다.</span></footer>
+    <footer class="page-footer"><span>마감노트 <span class="footer-dot">·</span> 한국 시간 기준 <span class="footer-dot">·</span> v1.1.0</span><span id="save-status">모든 변경 사항은 자동 저장됩니다.</span></footer>
   </main>
 
   <dialog id="assignment-dialog" aria-labelledby="assignment-dialog-title">
