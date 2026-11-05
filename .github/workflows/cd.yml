@@ -24,7 +24,6 @@ jobs:
     timeout-minutes: 20
     env:
       DEPLOY_REVISION: ${{ github.event.workflow_run.head_sha }}
-      DOCKER_CONFIG: ${{ runner.temp }}/assignment-docker-auth
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,6 +45,7 @@ jobs:
           }
           docker info --format '{{.OSType}}'
           if ($LASTEXITCODE -ne 0) { throw 'Docker Desktop을 실행해 주세요.' }
+          "DOCKER_CONFIG=$env:RUNNER_TEMP\assignment-docker-auth" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
       - name: Sign in to Docker Hub
         uses: docker/login-action@v4
         with:
@@ -66,3 +66,4 @@ jobs:
         with:
           name: deployment-verification-${{ github.run_id }}
           path: artifacts/deployment/
+
