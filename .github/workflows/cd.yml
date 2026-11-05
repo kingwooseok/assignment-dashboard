@@ -24,17 +24,17 @@ jobs:
     timeout-minutes: 20
     env:
       DEPLOY_REVISION: ${{ github.event.workflow_run.head_sha }}
+      PYTHONUTF8: '1'
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
           persist-credentials: false
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-      - name: Find Docker Desktop
+      - name: Verify local Python and Docker Desktop
         shell: pwsh
         run: |
+          python -c "import sys; assert sys.version_info >= (3, 11); print(sys.version)"
+          if ($LASTEXITCODE -ne 0) { throw 'Python 3.11 이상을 설치해 주세요.' }
           $candidates = @("$env:LOCALAPPDATA\Programs\DockerDesktop\resources\bin", 'C:\Program Files\Docker\Docker\resources\bin')
           foreach ($directory in $candidates) {
             if (Test-Path (Join-Path $directory 'docker.exe')) {
